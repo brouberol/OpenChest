@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent) {
         val lux = event.values[0]
         activateAfter(lux)
-        if (isActivated == true && done == false && mPlayer.isPlaying == false) {
+        if (isActivated && !done && !mPlayer.isPlaying) {
             turnLightsOn()
             playSound()
         }
