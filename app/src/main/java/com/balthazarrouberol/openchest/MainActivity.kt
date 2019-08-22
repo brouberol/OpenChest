@@ -9,7 +9,9 @@ import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.CountDownTimer
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -21,11 +23,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var cameraManager: CameraManager
 
     private val activationLux = 5
-    private val activationPeriodMs = 100
-    private var isActivated = false
-    private var isBeingActivated = false
-    private var startActivationMs = 0L
-    private var done = false
+    private val countDownDurationMs = 10000L
+    private var running: Boolean = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,65 +37,83 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-    }
 
-    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-        // Don't do anything for now
-    }
-
-    // This function is in charge of setting the isActivated boolean
-    // attribute to true whenever the ambiant lux measurement has been
-    // greater than a given threshold for more than a given amount of time
-    fun activateAfter(currentLux: Float) {
-        println("Lux: ${currentLux}")
-        if (!isActivated && currentLux >= activationLux) {
-            if (isBeingActivated == false) {
-                isBeingActivated = true
-                startActivationMs = System.currentTimeMillis()
-                println("Starting activation at ${startActivationMs}")
-            } else {
-                println("Checking if fully activated")
-                val now = System.currentTimeMillis()
-                if (now - startActivationMs >= activationPeriodMs) {
-                    println("Activated!")
-                    isActivated = true
-                    isBeingActivated = false
+        // Once the chest button has been pressed, start the countdown
+        // after which the light sensor will be registered
+        chestButton.setOnClickListener {
+            mLight.also {
+                // Prevent from playing the sound twice if your hand shakes
+                if (!running) {
+                    println("The chest has been pressed, starting countdown!")
+                    running = true
+                    countDownAndStart()
                 }
             }
         }
+
     }
 
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
+
+    // Count down, and register the light sensor at the end
+    fun countDownAndStart() {
+        val countdown = object : CountDownTimer(countDownDurationMs, 1000) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                instructionText.text = "${millisUntilFinished / 1000}"
+            }
+
+            override fun onFinish() {
+                instructionText.text = ""
+                println("Countdown done")
+                registerLightSensor()
+            }
+
+        }
+        instructionText.text = "${countDownDurationMs / 1000}"
+        countdown.start()
+    }
+
+    fun registerLightSensor() {
+        println("Registering light sensor")
+        sensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_FASTEST)
+    }
+
+    fun unregiserLightSensor() {
+        println("Unregistering light sensor")
+        sensorManager.unregisterListener(this)
+    }
+
+    // Play the sound at almost max volume
     fun playSound() {
         val maxvolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        println("Playing sound at near max volume (${maxvolume - 1})")
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxvolume - 1, AudioManager.FLAG_PLAY_SOUND)
         mPlayer.setOnCompletionListener {
-            done = true
+            println("Sound is over.")
+            unregiserLightSensor()
         }
         mPlayer.start()
     }
 
-    fun turnLightsOn() {
-        // println(cameraManager.getCameraIdList())
-    }
-
+    // Event handler executed when the light sensor detects a change
     override fun onSensorChanged(event: SensorEvent) {
         val lux = event.values[0]
-        activateAfter(lux)
-        if (isActivated && !done && !mPlayer.isPlaying) {
+        println("Lux: ${lux}")
+        if (lux >= activationLux && !mPlayer.isPlaying) {
             turnLightsOn()
             playSound()
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        mLight.also { light ->
-            sensorManager.registerListener(this, light, SensorManager.SENSOR_DELAY_FASTEST)
-        }
+    // Turn on the front LED, if detected
+    fun turnLightsOn() {
+        println("Turning LED on")
     }
 
+    // Unregister the light sensor when the app goes dormant
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+        unregiserLightSensor()
     }
 }
