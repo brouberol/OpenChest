@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         mPlayer.setOnCompletionListener {
             println("Sound is over.")
             unregiserLightSensor()
+            turnLightsOff()
         }
         mPlayer.start()
     }
@@ -106,9 +107,21 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    // Turn on the front LED, if detected
+    // Turn on the LED, if detected
     fun turnLightsOn() {
-        println("Turning LED on")
+        if (cameraManager.cameraIdList.firstOrNull() != null) {
+            println("Turning LED on")
+            cameraManager.setTorchMode(cameraManager.cameraIdList[0], true)
+        }
+
+    }
+
+    // Turn off the LED, if detected
+    fun turnLightsOff() {
+        if (cameraManager.cameraIdList.firstOrNull() != null) {
+            println("Turning LED on")
+            cameraManager.setTorchMode(cameraManager.cameraIdList[0], true)
+        }
     }
 
     // Unregister the light sensor when the app goes dormant
