@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             println("Sound is over.")
             unregiserLightSensor()
             turnLightsOff()
+            instructionText.text = getString(R.string.press_on_the_chest_to_start)
+            running = false
         }
         mPlayer.start()
     }
