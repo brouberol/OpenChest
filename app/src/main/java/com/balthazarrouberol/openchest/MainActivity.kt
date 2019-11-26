@@ -22,10 +22,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var audioManager: AudioManager
     private lateinit var cameraManager: CameraManager
 
-    private val activationLux = 5
+    private val activationLux = 2
     private val countDownDurationMs = 10000L
     private var running: Boolean = false
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +35,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         mPlayer = MediaPlayer.create(this, R.raw.zeldachest)
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-
 
         // Once the chest button has been pressed, start the countdown
         // after which the light sensor will be registered
@@ -121,7 +119,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     // Turn off the LED, if detected
     fun turnLightsOff() {
         if (cameraManager.cameraIdList.firstOrNull() != null) {
-            println("Turning LED on")
+            println("Turning LED off")
             cameraManager.setTorchMode(cameraManager.cameraIdList[0], true)
         }
     }
